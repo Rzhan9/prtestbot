@@ -1,0 +1,46 @@
+name: Test Coverage Review Agent
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+jobs:
+  review:
+    name: Review PR Test Coverage
+    runs-on: ubuntu-latest
+    
+    # Avoid running on draft pull requests
+    if: github.event.pull_request.draft == false
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r test-coverage-agent/requirements.txt
+
+      - name: Run Test Coverage Review Agent
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          
+          # Pass along whichever API key is configured in user secrets
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          
+          # Make python package imports resolve correctly
+          PYTHONPATH: test-coverage-agent/src
+        run: |
+          python test-coverage-agent/src/test_coverage_agent/main.py
