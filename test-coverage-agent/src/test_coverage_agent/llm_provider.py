@@ -52,7 +52,7 @@ class AnthropicProvider(LlmProvider):
     """
     Anthropic Claude API provider using direct HTTP requests.
     """
-    def __init__(self, api_key: str, model: str = "claude-3-5-sonnet-latest"):
+    def __init__(self, api_key: str, model: str = "claude-sonnet-4-5-20250929"):
         self.api_key = api_key
         self.model = model
 
@@ -140,7 +140,7 @@ def get_llm_provider() -> LlmProvider:
         # Fall back to provider defined by LLM_PROVIDER env, defaulting to Gemini
         provider = os.environ.get("LLM_PROVIDER", "gemini").lower()
         if provider == "anthropic":
-            return AnthropicProvider(api_key=general_key, model=model_override or "claude-3-5-sonnet-latest")
+            return AnthropicProvider(api_key=general_key, model=model_override or "claude-sonnet-4-5-20250929")
         elif provider == "openai":
             return OpenAiProvider(api_key=general_key, model=model_override or "gpt-4o")
         else:
