@@ -133,7 +133,7 @@ def get_llm_provider() -> LlmProvider:
     if gemini_key:
         return GeminiProvider(api_key=gemini_key, model=model_override or "gemini-2.5-flash")
     elif anthropic_key:
-        return AnthropicProvider(api_key=anthropic_key, model=model_override or "claude-3-5-sonnet-latest")
+        return AnthropicProvider(api_key=anthropic_key, model=model_override or "claude-sonnet-4-5-20250929")
     elif openai_key:
         return OpenAiProvider(api_key=openai_key, model=model_override or "gpt-4o")
     elif general_key:
