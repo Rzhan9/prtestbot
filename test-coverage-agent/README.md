@@ -18,9 +18,6 @@ It analyzes the code diff, locates related existing tests, identifies changed/ad
 
 ```text
 test-coverage-agent/
-  .github/
-    workflows/
-      test-coverage-agent.yml
   src/
     test_coverage_agent/
       __init__.py
