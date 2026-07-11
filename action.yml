@@ -29,6 +29,19 @@ runs:
         python -m pip install --upgrade pip
         pip install -r ${{ github.action_path }}/test-coverage-agent/requirements.txt
 
+    - name: Configure LLM Provider Key
+      shell: bash
+      run: |
+        PROVIDER="${{ inputs.llm_provider }}"
+        KEY="${{ inputs.llm_api_key }}"
+        if [ "$PROVIDER" = "anthropic" ]; then
+          echo "ANTHROPIC_API_KEY=$KEY" >> $GITHUB_ENV
+        elif [ "$PROVIDER" = "openai" ]; then
+          echo "OPENAI_API_KEY=$KEY" >> $GITHUB_ENV
+        else
+          echo "GEMINI_API_KEY=$KEY" >> $GITHUB_ENV
+        fi
+
     - name: Run Test Coverage Review Agent
       shell: bash
       env:
@@ -36,8 +49,6 @@ runs:
         GITHUB_EVENT_PATH: ${{ github.event_path }}
         GITHUB_REPOSITORY: ${{ github.repository }}
         GITHUB_WORKSPACE: ${{ github.workspace }}
-        LLM_API_KEY: ${{ inputs.llm_api_key }}
-        LLM_PROVIDER: ${{ inputs.llm_provider }}
         LLM_MODEL: ${{ inputs.llm_model }}
         PYTHONPATH: ${{ github.action_path }}/test-coverage-agent/src
       run: |
