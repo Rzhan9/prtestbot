@@ -45,10 +45,10 @@ test-coverage-agent/
 
 ## GitHub Setup (Actions)
 
-To use the agent in a repository, create a workflow file at `.github/workflows/test-coverage-agent.yml` with the following configuration (already present in this repository):
+To use the agent in any repository, add a workflow file at `.github/workflows/test-coverage.yml` with the following content:
 
 ```yaml
-name: Test Coverage Review Agent
+name: PR Test Coverage Review
 
 on:
   pull_request:
@@ -56,55 +56,36 @@ on:
 
 jobs:
   review:
-    name: Review PR Test Coverage
     runs-on: ubuntu-latest
-    
     if: github.event.pull_request.draft == false
-    
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: Rzhan9/prtestbot@main
         with:
-          python-version: '3.11'
-
-      - name: Install Dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r test-coverage-agent/requirements.txt
-
-      - name: Run Test Coverage Review Agent
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_EVENT_PATH: ${{ github.event_path }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          
-          # Configure one or more of these API keys in your repository secrets:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          # ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          # OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          
-          PYTHONPATH: test-coverage-agent/src
-        run: |
-          python test-coverage-agent/src/test_coverage_agent/main.py
+          llm_api_key: ${{ secrets.YOUR_API_KEY_SECRET }}
+          llm_provider: gemini  # or: anthropic, openai
 ```
 
-### Required Permissions
+Then add your LLM API key to the repository's **Settings → Secrets and variables → Actions**:
 
-Ensure the workflow run has write permissions for PR comments. You can specify these permissions in your workflow:
+| Provider | Secret name | `llm_provider` value |
+|---|---|---|
+| Google Gemini | `GEMINI_API_KEY` | `gemini` |
+| Anthropic Claude | `ANTHROPIC_API_KEY` | `anthropic` |
+| OpenAI GPT | `OPENAI_API_KEY` | `openai` |
 
-```yaml
-permissions:
-  contents: read
-  pull-requests: write
-  issues: write
-```
+That's all. No Python files, no pip installs — the action handles everything internally.
 
 ---
+
 
 ## Local Development & Testing
 
