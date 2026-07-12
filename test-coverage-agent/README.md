@@ -42,7 +42,7 @@ test-coverage-agent/
 
 ## GitHub Setup (Actions)
 
-To use the agent in any repository, add a workflow file at `.github/workflows/test-coverage.yml` with the following content:
+To use the agent in any repository, add a workflow file at `.github/workflows/test-coverage-agent.yml` with the following content:
 
 ```yaml
 name: PR Test Coverage Review
