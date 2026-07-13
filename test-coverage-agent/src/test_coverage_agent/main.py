@@ -14,7 +14,9 @@ from test_coverage_agent.diff_parser import parse_diff
 from test_coverage_agent.test_finder import find_related_tests
 from test_coverage_agent.repo_analyzer import read_file_content
 from test_coverage_agent.llm_provider import get_llm_provider
-from test_coverage_agent.prompt_builder import build_user_prompt, SYSTEM_PROMPT
+from test_coverage_agent.prompt_builder import build_report_prompt, SYSTEM_PROMPT
+from test_coverage_agent.obligation_extractor import extract_obligations
+from test_coverage_agent.obligation_searcher import search_coverage, format_obligations_for_prompt
 from test_coverage_agent.report_formatter import format_report, is_bot_comment
 
 def main():
@@ -153,24 +155,46 @@ def main():
                     if test_content is not None:
                         file_contents[test_file] = test_content
 
-    # 4. Generate coverage review report using selected LLM Provider
+    # 4. Initialise LLM provider (used by both pipeline steps)
     try:
         provider = get_llm_provider()
         print(f"Loaded LLM Provider: {provider.__class__.__name__} (Model: {provider.model})")
     except Exception as e:
         print(f"Error initializing LLM provider: {e}")
         sys.exit(1)
-        
-    user_prompt = build_user_prompt(
+
+    # 4a. Extract structured test obligations via LLM (call #1)
+    print("Extracting test obligations from diff...")
+    obligations = extract_obligations(
+        unified_diff=diff_content,
+        file_contents=file_contents,
+        provider=provider,
+        pr_title=pr_title,
+        pr_body=pr_body,
+    )
+    print(f"Extracted {len(obligations)} test obligation(s).")
+
+    # 4b. Search existing test files for coverage evidence (pure Python, no LLM)
+    evidence = search_coverage(obligations, file_contents)
+    if obligations:
+        covered_count = sum(1 for e in evidence.values() if e.status == "covered")
+        print(f"Coverage search complete: {covered_count}/{len(obligations)} obligation(s) appear covered.")
+
+    # Build the obligations block to embed in the final report prompt
+    obligations_block = format_obligations_for_prompt(obligations, evidence)
+
+    # 4c. Build the final report prompt and call the LLM (call #2)
+    user_prompt = build_report_prompt(
         pr_title=pr_title,
         pr_body=pr_body,
         changed_files=changed_files_data,
         unified_diff=diff_content,
         file_contents=file_contents,
-        related_tests=related_tests
+        related_tests=related_tests,
+        obligations_block=obligations_block,
     )
     
-    print("Requesting test coverage analysis from LLM...")
+    print("Requesting final test coverage report from LLM...")
     try:
         llm_response = provider.generate_response(SYSTEM_PROMPT, user_prompt)
     except Exception as e:
