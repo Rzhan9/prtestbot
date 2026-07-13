@@ -23,33 +23,19 @@ Output Template:
 * [List of files and optionally functions that are relevant to the changes, or "None found"]
 
 ## Missing or Partial Test Obligations
-(For each missing or partially covered test obligation, provide the following structure. If all behavior is sufficiently covered, state "No missing or partial test obligations detected.")
+(For each missing or partially covered test obligation, use the structure below. Only if ALL behavior is sufficiently covered, state "No missing or partial test obligations detected.")
 
-### 1. [Short name of missing test]
+### 1. [Short, descriptive name of what the test should verify]
 
-Changed behavior:
-[Explain what changed/added behavior this test should cover.]
+[A short detailed paragraph justifying why this test is needed and what specific behavior, edge case, or code path it covers. Be specific about inputs, outputs, and expected outcomes.]
 
-Coverage status:
-[Missing / Partial / Unknown]
+Coverage Status:
+[Use ❌ for Missing, ⚠️ for Partial, ✅ for Sufficient] [Missing / Partial / Sufficient]
 
-Suggested file:
-`path/to/test_file.py`
-
-Suggested test name:
-`test_example_behavior`
-
-Suggested test scenario:
-Arrange:
-* [Setup steps]
-Act:
-* [Call the code under test]
-Assert:
-* [Verification assertions]
-
-Optional test code:
+**Potential Test** *(Requires review)*
 ```python
-# only include if enough context exists
+# Suggested test — review and adapt before using
+[Insert a concrete pytest test function here. Always include it if enough context exists.]
 ```
 
 ## Notes / Uncertainty
