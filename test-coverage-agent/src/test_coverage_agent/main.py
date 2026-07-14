@@ -173,6 +173,16 @@ def main():
         if f.is_source_file and f.filename in file_contents
     }
 
+    # Deleted source files have no content to read, but the LLM still needs to know
+    # about them so it can flag deletion-triggered obligations (test cleanup/updates).
+    deleted_source_files = [
+        f.filename
+        for f in changed_files
+        if f.status == "deleted" and f.is_source_file
+    ]
+    if deleted_source_files:
+        print(f"Deleted source files in PR: {deleted_source_files}")
+
     print("Extracting test obligations from diff...")
     obligations = extract_obligations(
         unified_diff=diff_content,
@@ -180,6 +190,7 @@ def main():
         provider=provider,
         pr_title=pr_title,
         pr_body=pr_body,
+        deleted_source_files=deleted_source_files,
     )
     print(f"Extracted {len(obligations)} test obligation(s).")
 

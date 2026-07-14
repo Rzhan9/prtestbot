@@ -29,10 +29,13 @@ Given a unified diff and the current source code of changed files, identify ever
 behavioral change that requires a new or updated test.
 
 RULES:
-- Focus only on behavior: new logic, changed logic, error handling, edge cases.
+- Focus only on behavior: new logic, changed logic, deleted logic, error handling, edge cases.
 - Do NOT flag style, formatting, comments, or documentation changes.
 - Each obligation must relate to exactly one behavioral change — be specific.
 - Symbols should be the exact function or class name(s) involved as they appear in code.
+- Deleted files and functions are listed explicitly below the diff. If a function or class was
+  deleted, that is an obligation: any existing tests for that behavior must be updated or removed.
+  Use obligation_type "regression" for deletion-triggered obligations.
 - Obligation types: new_behavior, edge_case, error_handling, regression.
 
 OUTPUT FORMAT:
@@ -59,6 +62,16 @@ Example:
     "search_terms": ["inactive", "disabled", "403", "access_token", "login"],
     "expected_behavior": "Inactive user with valid credentials receives 403 and no access token.",
     "obligation_type": "error_handling"
+  },
+  {
+    "id": "validate-email-deleted",
+    "title": "validate_email() removed — tests must be updated",
+    "description": "validate_email() was deleted from validators.py. Any tests that exercised this function must be removed or rerouted to the replacement.",
+    "source_file": "src/validators.py",
+    "symbols": ["validate_email"],
+    "search_terms": ["validate_email", "email", "validation"],
+    "expected_behavior": "No test should call validate_email() after it is removed.",
+    "obligation_type": "regression"
   }
 ]
 
@@ -71,16 +84,26 @@ def build_obligation_extraction_prompt(
     file_contents: Dict[str, str],
     pr_title: str = "",
     pr_body: str = "",
+    deleted_source_files: List[str] = None,
 ) -> str:
     """
     Builds the focused user prompt for LLM call #1 (obligation extraction).
-    Only includes the diff and source files — test files are deliberately excluded
-    here because obligation extraction is about what *should* be tested, not what is.
+    Only includes the diff and changed source files — test files are excluded.
+    Deleted source files are surfaced explicitly so the LLM does not miss
+    deletion-triggered obligations (e.g. tests that now reference removed code).
     """
     source_context_parts = []
     for filename, content in file_contents.items():
         source_context_parts.append(f"=== {filename} ===\n{content}")
     source_context = "\n\n".join(source_context_parts)
+
+    deleted_section = ""
+    if deleted_source_files:
+        deleted_list = "\n".join(f"- {f}" for f in deleted_source_files)
+        deleted_section = f"""
+
+Deleted Source Files (no current content — see diff for removed code):
+{deleted_list}"""
 
     return f"""\
 PR Title: {pr_title or "(none)"}
@@ -90,7 +113,7 @@ Unified Diff:
 {unified_diff}
 
 Source Files (current state after PR changes):
-{source_context or "(no source file contents available)"}
+{source_context or "(no source file contents available)"}{deleted_section}
 """
 
 
@@ -100,12 +123,17 @@ def extract_obligations(
     provider: LlmProvider,
     pr_title: str = "",
     pr_body: str = "",
+    deleted_source_files: List[str] = None,
 ) -> List[TestObligation]:
     """
     LLM call #1: Extracts structured TestObligation objects from the PR diff.
 
     Callers are expected to pass only changed source file contents — not related
     test files, not unchanged context files. Scoping is the caller's responsibility.
+
+    deleted_source_files: list of filenames that were deleted in this PR. These
+    files have no content to pass, but the LLM is told about them explicitly so
+    it can produce regression obligations for tests that reference removed code.
 
     On any error (LLM failure, malformed JSON, unexpected schema), logs a warning
     and returns an empty list so the pipeline degrades gracefully to the existing
@@ -116,6 +144,7 @@ def extract_obligations(
         file_contents=file_contents,
         pr_title=pr_title,
         pr_body=pr_body,
+        deleted_source_files=deleted_source_files or [],
     )
 
     try:

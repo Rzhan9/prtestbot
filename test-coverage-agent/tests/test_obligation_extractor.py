@@ -141,3 +141,37 @@ def test_extract_obligations_llm_failure_returns_empty():
         provider=mock_provider,
     )
     assert result == []
+
+def test_extract_obligations_surfaces_deleted_files_in_prompt():
+    """Deleted source files must appear explicitly in the extraction prompt."""
+    mock_provider = MagicMock()
+    mock_provider.generate_response.return_value = "[]"
+
+    extract_obligations(
+        unified_diff="",
+        file_contents={},
+        provider=mock_provider,
+        deleted_source_files=["src/validators.py", "src/legacy_auth.py"],
+    )
+
+    call_args = mock_provider.generate_response.call_args
+    user_prompt = call_args[0][1]
+    assert "src/validators.py" in user_prompt
+    assert "src/legacy_auth.py" in user_prompt
+    assert "Deleted Source Files" in user_prompt
+
+def test_extract_obligations_no_deleted_section_when_none():
+    """When no files are deleted, the prompt should not include a deleted section."""
+    mock_provider = MagicMock()
+    mock_provider.generate_response.return_value = "[]"
+
+    extract_obligations(
+        unified_diff="",
+        file_contents={"src/calc.py": "def add(a, b): return a + b"},
+        provider=mock_provider,
+        deleted_source_files=[],
+    )
+
+    call_args = mock_provider.generate_response.call_args
+    user_prompt = call_args[0][1]
+    assert "Deleted Source Files" not in user_prompt
