@@ -193,6 +193,8 @@ def main():
         deleted_source_files=deleted_source_files,
     )
     print(f"Extracted {len(obligations)} test obligation(s).")
+    if not obligations:
+        print("No test obligations extracted. Final report will explain that no clear behavioral test obligations were found.")
 
     # 4b. Search existing test files for coverage evidence (pure Python, no LLM)
     evidence = search_coverage(obligations, file_contents)
