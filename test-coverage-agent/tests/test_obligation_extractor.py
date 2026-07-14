@@ -115,24 +115,21 @@ def test_extract_obligations_returns_parsed_list():
     # LLM should have been called exactly once
     mock_provider.generate_response.assert_called_once()
 
-def test_extract_obligations_excludes_test_files_from_prompt():
-    """Test files should not appear in the obligation extraction prompt."""
+def test_extract_obligations_passes_given_files_to_prompt():
+    """extract_obligations uses exactly what it's given \u2014 callers own scoping."""
     mock_provider = MagicMock()
     mock_provider.generate_response.return_value = "[]"
 
     extract_obligations(
         unified_diff="",
-        file_contents={
-            "src/calc.py": "def add(a, b): return a + b",
-            "tests/test_calc.py": "def test_add(): assert add(1,2)==3",
-        },
+        file_contents={"src/calc.py": "def add(a, b): return a + b"},
         provider=mock_provider,
     )
 
     call_args = mock_provider.generate_response.call_args
     user_prompt = call_args[0][1]  # positional arg index 1
-    assert "tests/test_calc.py" not in user_prompt
     assert "src/calc.py" in user_prompt
+
 
 def test_extract_obligations_llm_failure_returns_empty():
     mock_provider = MagicMock()

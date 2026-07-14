@@ -31,7 +31,6 @@ behavioral change that requires a new or updated test.
 RULES:
 - Focus only on behavior: new logic, changed logic, error handling, edge cases.
 - Do NOT flag style, formatting, comments, or documentation changes.
-- Do NOT flag changes that are clearly already covered if the test file is provided.
 - Each obligation must relate to exactly one behavioral change — be specific.
 - Symbols should be the exact function or class name(s) involved as they appear in code.
 - Obligation types: new_behavior, edge_case, error_handling, regression.
@@ -105,20 +104,16 @@ def extract_obligations(
     """
     LLM call #1: Extracts structured TestObligation objects from the PR diff.
 
+    Callers are expected to pass only changed source file contents — not related
+    test files, not unchanged context files. Scoping is the caller's responsibility.
+
     On any error (LLM failure, malformed JSON, unexpected schema), logs a warning
     and returns an empty list so the pipeline degrades gracefully to the existing
     single-prompt behaviour.
     """
-    # Only pass source files (not test files) to the obligation extractor
-    source_only_contents = {
-        path: content
-        for path, content in file_contents.items()
-        if not _is_test_path(path)
-    }
-
     user_prompt = build_obligation_extraction_prompt(
         unified_diff=unified_diff,
-        file_contents=source_only_contents,
+        file_contents=file_contents,
         pr_title=pr_title,
         pr_body=pr_body,
     )

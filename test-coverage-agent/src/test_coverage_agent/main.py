@@ -164,10 +164,19 @@ def main():
         sys.exit(1)
 
     # 4a. Extract structured test obligations via LLM (call #1)
+    # Only pass changed source files — not related test files, not unchanged context.
+    # The obligation extractor should reason about what *needs* testing, without
+    # being influenced by whether tests already exist.
+    source_file_contents = {
+        f.filename: file_contents[f.filename]
+        for f in changed_files
+        if f.is_source_file and f.filename in file_contents
+    }
+
     print("Extracting test obligations from diff...")
     obligations = extract_obligations(
         unified_diff=diff_content,
-        file_contents=file_contents,
+        file_contents=source_file_contents,
         provider=provider,
         pr_title=pr_title,
         pr_body=pr_body,
