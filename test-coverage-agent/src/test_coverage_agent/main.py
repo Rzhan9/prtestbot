@@ -183,18 +183,29 @@ def main():
     if deleted_source_files:
         print(f"Deleted source files in PR: {deleted_source_files}")
 
-    print("Extracting test obligations from diff...")
-    obligations = extract_obligations(
-        unified_diff=diff_content,
-        file_contents=source_file_contents,
-        provider=provider,
-        pr_title=pr_title,
-        pr_body=pr_body,
-        deleted_source_files=deleted_source_files,
-    )
-    print(f"Extracted {len(obligations)} test obligation(s).")
-    if not obligations:
-        print("No test obligations extracted. Final report will explain that no clear behavioral test obligations were found.")
+    # Early exit from obligation extraction for test-only / non-source PRs.
+    # If no source files were changed (and none deleted), there is no production behavior
+    # to reason about. Calling the LLM would waste tokens and risk phantom obligations
+    # derived from the test diff itself.
+    has_source_changes = bool(source_file_contents) or bool(deleted_source_files)
+    if not has_source_changes:
+        print("No source files changed. This appears to be a test-only or non-source PR.")
+        print("Skipping obligation extraction. Final report will note no production behavior changes were detected.")
+        obligations = []
+    else:
+        print("Extracting test obligations from diff...")
+        obligations = extract_obligations(
+            unified_diff=diff_content,
+            file_contents=source_file_contents,
+            provider=provider,
+            pr_title=pr_title,
+            pr_body=pr_body,
+            deleted_source_files=deleted_source_files,
+        )
+        print(f"Extracted {len(obligations)} test obligation(s).")
+        if not obligations:
+            print("No test obligations extracted. Final report will explain that no clear behavioral test obligations were found.")
+
 
     # 4b. Search existing test files for coverage evidence (pure Python, no LLM)
     evidence = search_coverage(obligations, file_contents)
