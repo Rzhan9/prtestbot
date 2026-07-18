@@ -1,7 +1,7 @@
 name: 'PR Test Coverage Review Agent'
 description: 'Analyze PR diffs and suggest missing tests using LLMs'
 branding:
-  icon: 'check-square'
+  icon: 'check-circle'
   color: 'blue'
 inputs:
   llm_api_key:

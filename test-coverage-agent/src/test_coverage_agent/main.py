@@ -1,7 +1,8 @@
 import os
 import sys
 
-# Add the 'src' directory to sys.path to allow running main.py directly
+# Add test-coverage-agent/src to sys.path so test_coverage_agent.* imports resolve
+# when running main.py directly (e.g. for local dry-runs).
 src_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
 if src_dir not in sys.path:
     sys.path.insert(0, src_dir)
