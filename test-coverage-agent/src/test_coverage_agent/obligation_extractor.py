@@ -1,6 +1,6 @@
 import json
-from dataclasses import dataclass, field
-from typing import List, Dict, Optional
+from dataclasses import dataclass
+from typing import List, Dict
 
 from test_coverage_agent.llm_provider import LlmProvider
 
