@@ -4,41 +4,20 @@ A GitHub Action and Python tool that automatically reviews Pull Request (PR) dif
 
 It analyzes the code diff, locates related existing tests, identifies changed/added behavior, determines coverage status, and suggests concrete tests to write. It posts a formatted report as a PR comment and automatically updates its previous comment on subsequent commits to avoid spamming the PR conversation.
 
+Note: Requires your own LLM API key (Google Gemini, Anthropic Claude, or OpenAI GPT).
+
 ## Features
 
 - **Behavior-Focused:** Does not review code style, performance, or unrelated issues. Focuses purely on: *"Did this PR add or update enough tests for the behavior it changed?"*
+- **Structured Test Obligations:** Extracts a typed list of `TestObligation` objects from the diff — each with an id, title, symbols, behavioral search terms, expected behavior, and obligation type. These become intermediate objects the pipeline can inspect and act on.
+- **Code-Based Coverage Search:** Searches the existing test files for each obligation using two strategies: symbol matching (exact function/class names) and behavioral keyword matching (`search_terms`). Each obligation is assigned a `covered`, `partial`, or `missing` status before the final report is generated.
+- **Deleted File Detection:** Deleted source files are explicitly surfaced in the extraction regression obligations (e.g. tests that now reference removed code) can be flagged.
+- **Test-Only PR Detection:** When a PR only changes test files, obligation extraction is skipped entirely to avoid wasted API calls and phantom obligations derived from test code.
 - **Smart Test Finding:** Locates existing test files using structural matching and naming convention similarity heuristics.
 - **De-duplication:** Automatically finds and updates its previous review comments instead of flooding the PR with new comment threads.
 - **Multi-Provider Support:** Supports Anthropic (Claude), Google Gemini, and OpenAI out of the box via lightweight direct HTTP APIs.
-- **Local Dry-Runs:** Run the analysis locally against any repository diff without requiring a GitHub Action environment.
 
----
 
-## Directory Structure
-
-```text
-test-coverage-agent/
-  src/
-    test_coverage_agent/
-      __init__.py
-      main.py
-      github_client.py
-      repo_analyzer.py
-      diff_parser.py
-      test_finder.py
-      llm_provider.py
-      prompt_builder.py
-      report_formatter.py
-  tests/
-    test_diff_parser.py
-    test_test_finder.py
-    test_report_formatter.py
-  README.md
-  requirements.txt
-  .env.example
-```
-
----
 
 ## GitHub Setup (Actions)
 
