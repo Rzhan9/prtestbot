@@ -1,4 +1,4 @@
-name: 'PR Test Coverage Review Agent'
+name: 'PR Test Bot'
 description: 'Analyze PR diffs and suggest missing tests using LLMs'
 branding:
   icon: 'check-circle'
