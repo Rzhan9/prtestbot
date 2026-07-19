@@ -1,4 +1,4 @@
-name: 'PR Test Bot'
+name: 'TestCheck'
 description: 'Analyze PR diffs and suggest missing tests using LLMs'
 branding:
   icon: 'check-circle'
