@@ -1,5 +1,5 @@
 name: 'Zetestic'
-description: 'Analyze PR diffs and suggest missing tests using LLMs'
+description: 'A Github bot that reviews code changes in pull request diffs for test coverage and suggests concrete tests for changed behavior if needed.'
 branding:
   icon: 'check-circle'
   color: 'blue'
