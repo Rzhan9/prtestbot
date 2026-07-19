@@ -1,4 +1,4 @@
-name: 'TestCheck'
+name: 'Zetestic'
 description: 'Analyze PR diffs and suggest missing tests using LLMs'
 branding:
   icon: 'check-circle'
