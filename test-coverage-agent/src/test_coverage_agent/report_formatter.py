@@ -8,11 +8,11 @@ def format_report(llm_output: str) -> str:
     clean_output = llm_output.strip()
     
     # Prepend header if LLM failed to include it or reformatted it
-    if not clean_output.startswith("# Test Coverage Review Agent"):
+    if not clean_output.startswith("# Zetestic"):
         # Strip any existing leading headers if they are similar
-        if clean_output.lower().startswith("test coverage review agent"):
-            clean_output = clean_output[len("test coverage review agent"):].strip()
-        clean_output = f"# Test Coverage Review Agent\n\n{clean_output}"
+        if clean_output.lower().startswith("zetestic"):
+            clean_output = clean_output[len("zetestic"):].strip()
+        clean_output = f"# Zetestic\n\n{clean_output}"
         
     return f"{clean_output}\n\n{COMMENT_MARKER}"
 

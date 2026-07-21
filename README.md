@@ -1,4 +1,4 @@
-# GitHub PR Test Coverage Review Agent
+# Zetestic
 
 A GitHub Action and Python tool that automatically reviews Pull Request (PR) diffs to determine if the changes have adequate test coverage. 
 

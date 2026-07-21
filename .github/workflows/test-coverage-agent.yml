@@ -1,4 +1,4 @@
-name: Test Coverage Review Agent
+name: Zetestic
 
 on:
   pull_request:
@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   review:
-    name: Review PR Test Coverage
+    name: Zetestic
     runs-on: ubuntu-latest
 
     # Avoid running on draft pull requests
@@ -33,7 +33,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r test-coverage-agent/requirements.txt
 
-      - name: Run Test Coverage Review Agent
+      - name: Run Zetestic
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_EVENT_PATH: ${{ github.event_path }}

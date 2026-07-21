@@ -1,8 +1,8 @@
 name: 'Zetestic'
 description: 'Github bot that reviews pull request diffs for test coverage and suggests concrete tests for changed behavior if needed.'
 branding:
-  icon: 'check-circle'
-  color: 'blue'
+  icon: 'search'
+  color: 'yellow'
 inputs:
   llm_api_key:
     description: 'API key for Gemini, Anthropic, or OpenAI'
@@ -42,7 +42,7 @@ runs:
           echo "GEMINI_API_KEY=$KEY" >> $GITHUB_ENV
         fi
 
-    - name: Run Test Coverage Review Agent
+    - name: Run Zetestic
       shell: bash
       env:
         GITHUB_TOKEN: ${{ github.token }}

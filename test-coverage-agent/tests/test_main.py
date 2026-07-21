@@ -16,7 +16,7 @@ class DummyProvider(LlmProvider):
         self.model = "dummy"
         
     def generate_response(self, system_prompt: str, user_prompt: str) -> str:
-        return """# Test Coverage Review Agent
+        return """# Zetestic
 
 ## Verdict
 
@@ -107,7 +107,7 @@ index a1b2c3d..e4f5g6h 100644
     mock_gh_client.create_comment.assert_called_once()
     args, kwargs = mock_gh_client.create_comment.call_args
     assert args[0] == 12
-    assert "Test Coverage Review Agent" in args[1]
+    assert "Zetestic" in args[1]
     assert "Partially sufficient" in args[1]
     assert "<!-- github-pr-test-coverage-agent-comment-marker -->" in args[1]
 
@@ -175,6 +175,6 @@ new file mode 100644
     mock_gh_client.update_comment.assert_called_once()
     args, kwargs = mock_gh_client.update_comment.call_args
     assert args[0] == 222
-    assert "Test Coverage Review Agent" in args[1]
+    assert "Zetestic" in args[1]
     assert "Partially sufficient" in args[1]
 
