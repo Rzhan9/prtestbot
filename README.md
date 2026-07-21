@@ -24,7 +24,7 @@ It analyzes the code diff, locates related existing tests, identifies changed/ad
 To use the agent in any repository, add a workflow file at `.github/workflows/test-coverage-agent.yml` with the following content:
 
 ```yaml
-name: PR Test Coverage Review
+name: Zetestic
 
 on:
   pull_request:
