@@ -210,9 +210,10 @@ def main():
 
     # 4b. Search existing test files for coverage evidence (pure Python, no LLM)
     evidence = search_coverage(obligations, file_contents)
+    total_count = len(obligations)
+    covered_count = sum(1 for e in evidence.values() if e.status == "covered")
     if obligations:
-        covered_count = sum(1 for e in evidence.values() if e.status == "covered")
-        print(f"Coverage search complete: {covered_count}/{len(obligations)} obligation(s) appear covered.")
+        print(f"Coverage search complete: {covered_count}/{total_count} obligation(s) appear covered.")
 
     # Build the obligations block to embed in the final report prompt
     obligations_block = format_obligations_for_prompt(obligations, evidence)
@@ -235,7 +236,7 @@ def main():
         print(f"Error calling LLM: {e}")
         sys.exit(1)
         
-    formatted_report = format_report(llm_response)
+    formatted_report = format_report(llm_response, covered=covered_count, total=total_count)
     
     # 5. Output response or post to GitHub comment
     if local_mode:
