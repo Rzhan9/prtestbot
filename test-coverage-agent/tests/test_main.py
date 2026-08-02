@@ -178,3 +178,182 @@ new file mode 100644
     assert "Zetestic" in args[1]
     assert "Partially sufficient" in args[1]
 
+
+# ---------------------------------------------------------------------------
+# Coverage threshold tests
+# ---------------------------------------------------------------------------
+
+def _make_event_file(tmp_path):
+    """Helper: write a minimal PR event JSON and return its path."""
+    event_file = tmp_path / "event.json"
+    event_file.write_text(json.dumps({
+        "pull_request": {
+            "number": 12,
+            "title": "Test PR",
+            "body": "",
+            "draft": False,
+        },
+        "repository": {"full_name": "owner/repo"},
+    }))
+    return event_file
+
+
+def _source_diff():
+    return """\
+diff --git a/myapp/calc.py b/myapp/calc.py
+new file mode 100644
+--- /dev/null
++++ b/myapp/calc.py
+@@ -0,0 +1,2 @@
++def add(a, b):
++    return a + b
+"""
+
+
+@patch("test_coverage_agent.main.search_coverage")
+@patch("test_coverage_agent.main.extract_obligations")
+@patch("test_coverage_agent.main.get_llm_provider")
+@patch("test_coverage_agent.main.read_file_content")
+@patch("test_coverage_agent.main.find_related_tests")
+@patch("test_coverage_agent.main.GitHubClient")
+def test_main_fails_when_coverage_below_threshold(
+    mock_gh_class, mock_find, mock_read, mock_llm,
+    mock_extract, mock_search, tmp_path
+):
+    """main() should exit with code 1 when covered/total < 70%."""
+    from test_coverage_agent.obligation_extractor import TestObligation
+    from test_coverage_agent.obligation_searcher import CoverageEvidence
+
+    # Two obligations, zero covered → 0% < 70% → should fail
+    ob1 = TestObligation(id="a", title="A", description="", source_file="src/calc.py",
+                         symbols=["add"], search_terms=[], expected_behavior="", obligation_type="new_behavior")
+    ob2 = TestObligation(id="b", title="B", description="", source_file="src/calc.py",
+                         symbols=["sub"], search_terms=[], expected_behavior="", obligation_type="new_behavior")
+    mock_extract.return_value = [ob1, ob2]
+    mock_search.return_value = {
+        "a": CoverageEvidence(obligation_id="a", status="missing"),
+        "b": CoverageEvidence(obligation_id="b", status="missing"),
+    }
+    mock_llm.return_value = DummyProvider()
+    mock_find.return_value = []
+    mock_read.return_value = "def add(a, b): return a + b"  # non-None → source file enters source_file_contents
+
+    mock_gh_client = MagicMock()
+    mock_gh_class.return_value = mock_gh_client
+    mock_gh_client.get_pr_details.return_value = {"title": "T", "body": "", "draft": False}
+    mock_gh_client.get_pr_diff.return_value = _source_diff()
+    mock_gh_client.get_pr_comments.return_value = []
+
+    event_file = _make_event_file(tmp_path)
+
+    import pytest
+    with patch.dict(os.environ, {
+        "GITHUB_EVENT_PATH": str(event_file),
+        "GITHUB_TOKEN": "tok",
+        "GITHUB_REPOSITORY": "owner/repo",
+        "GITHUB_WORKSPACE": str(tmp_path),
+    }):
+        with pytest.raises(SystemExit) as exc_info:
+            main()
+
+    assert exc_info.value.code == 1
+    # Comment must still have been posted before the exit
+    mock_gh_client.create_comment.assert_called_once()
+
+
+@patch("test_coverage_agent.main.search_coverage")
+@patch("test_coverage_agent.main.extract_obligations")
+@patch("test_coverage_agent.main.get_llm_provider")
+@patch("test_coverage_agent.main.read_file_content")
+@patch("test_coverage_agent.main.find_related_tests")
+@patch("test_coverage_agent.main.GitHubClient")
+def test_main_passes_when_coverage_meets_threshold(
+    mock_gh_class, mock_find, mock_read, mock_llm,
+    mock_extract, mock_search, tmp_path
+):
+    """main() should NOT exit with code 1 when covered/total >= 70%."""
+    from test_coverage_agent.obligation_extractor import TestObligation
+    from test_coverage_agent.obligation_searcher import CoverageEvidence
+
+    # Three obligations, all covered → 100% >= 70% → should pass
+    obs = [
+        TestObligation(id=f"ob{i}", title=f"Ob{i}", description="", source_file="src/calc.py",
+                       symbols=["add"], search_terms=[], expected_behavior="", obligation_type="new_behavior")
+        for i in range(3)
+    ]
+    mock_extract.return_value = obs
+    mock_search.return_value = {
+        ob.id: CoverageEvidence(obligation_id=ob.id, status="covered") for ob in obs
+    }
+    mock_llm.return_value = DummyProvider()
+    mock_find.return_value = []
+    mock_read.return_value = None
+
+    mock_gh_client = MagicMock()
+    mock_gh_class.return_value = mock_gh_client
+    mock_gh_client.get_pr_details.return_value = {"title": "T", "body": "", "draft": False}
+    mock_gh_client.get_pr_diff.return_value = _source_diff()
+    mock_gh_client.get_pr_comments.return_value = []
+
+    event_file = _make_event_file(tmp_path)
+
+    with patch.dict(os.environ, {
+        "GITHUB_EVENT_PATH": str(event_file),
+        "GITHUB_TOKEN": "tok",
+        "GITHUB_REPOSITORY": "owner/repo",
+        "GITHUB_WORKSPACE": str(tmp_path),
+    }):
+        main()  # should complete without raising SystemExit
+
+    mock_gh_client.create_comment.assert_called_once()
+
+
+@patch("test_coverage_agent.main.search_coverage")
+@patch("test_coverage_agent.main.extract_obligations")
+@patch("test_coverage_agent.main.get_llm_provider")
+@patch("test_coverage_agent.main.read_file_content")
+@patch("test_coverage_agent.main.find_related_tests")
+@patch("test_coverage_agent.main.GitHubClient")
+def test_main_passes_at_exactly_70_percent(
+    mock_gh_class, mock_find, mock_read, mock_llm,
+    mock_extract, mock_search, tmp_path
+):
+    """main() should pass at exactly 70% coverage (7/10). Threshold is strict < 0.70."""
+    from test_coverage_agent.obligation_extractor import TestObligation
+    from test_coverage_agent.obligation_searcher import CoverageEvidence
+
+    # 10 obligations, 7 covered → exactly 70% → should pass
+    obs = [
+        TestObligation(id=f"ob{i}", title=f"Ob{i}", description="", source_file="myapp/calc.py",
+                       symbols=["add"], search_terms=[], expected_behavior="", obligation_type="new_behavior")
+        for i in range(10)
+    ]
+    mock_extract.return_value = obs
+    mock_search.return_value = {
+        ob.id: CoverageEvidence(
+            obligation_id=ob.id,
+            status="covered" if i < 7 else "missing"
+        )
+        for i, ob in enumerate(obs)
+    }
+    mock_llm.return_value = DummyProvider()
+    mock_find.return_value = []
+    mock_read.return_value = "def add(a, b): return a + b"
+
+    mock_gh_client = MagicMock()
+    mock_gh_class.return_value = mock_gh_client
+    mock_gh_client.get_pr_details.return_value = {"title": "T", "body": "", "draft": False}
+    mock_gh_client.get_pr_diff.return_value = _source_diff()
+    mock_gh_client.get_pr_comments.return_value = []
+
+    event_file = _make_event_file(tmp_path)
+
+    with patch.dict(os.environ, {
+        "GITHUB_EVENT_PATH": str(event_file),
+        "GITHUB_TOKEN": "tok",
+        "GITHUB_REPOSITORY": "owner/repo",
+        "GITHUB_WORKSPACE": str(tmp_path),
+    }):
+        main()  # should complete without raising SystemExit
+
+    mock_gh_client.create_comment.assert_called_once()
