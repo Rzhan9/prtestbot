@@ -270,5 +270,27 @@ def main():
             print(f"Error posting/updating comment on GitHub: {e}")
             sys.exit(1)
 
+    # 6. Fail the check if coverage score is below the 70% threshold.
+    # Only applied when obligations exist — PRs with no obligations (test-only,
+    # refactor, docs) are not penalised.
+    COVERAGE_THRESHOLD = 0.70
+    if total_count > 0:
+        score_ratio = covered_count / total_count
+        if score_ratio < COVERAGE_THRESHOLD:
+            threshold_pct = int(COVERAGE_THRESHOLD * 100)
+            actual_pct = int(score_ratio * 100)
+            print(
+                f"Coverage check FAILED: {covered_count}/{total_count} obligations covered "
+                f"({actual_pct}%) — minimum required is {threshold_pct}%. "
+                f"Add or update tests to cover the missing obligations."
+            )
+            sys.exit(1)
+        else:
+            threshold_pct = int(COVERAGE_THRESHOLD * 100)
+            print(
+                f"Coverage check PASSED: {covered_count}/{total_count} obligations covered "
+                f"({int(score_ratio * 100)}%) — meets the {threshold_pct}% threshold."
+            )
+
 if __name__ == "__main__":
     main()
